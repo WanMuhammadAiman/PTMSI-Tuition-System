@@ -1,8 +1,9 @@
+# Use PHP 8.0.28 with Apache
 FROM php:8.0.28-apache
 
-# Install required PHP extensions
+# Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
-    zip unzip git curl libzip-dev libpng-dev libonig-dev libxml2-dev \
+    git curl zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev nodejs npm \
     && docker-php-ext-install pdo pdo_mysql zip
 
 # Enable Apache mod_rewrite
@@ -11,24 +12,33 @@ RUN a2enmod rewrite
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Laravel project files
+# Copy all project files
 COPY . .
 
-# Set permissions
+# Set permissions for Laravel
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+    && chmod -R 755 storage bootstrap/cache
+
+# Set up .env file
+RUN cp .env.example .env
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN composer install --no-interaction --optimize-autoloader
 
-# Apache rewrite config for Laravel
-RUN echo '<Directory /var/www/html>' > /etc/apache2/sites-available/000-default.conf && \
-    echo '    AllowOverride All' >> /etc/apache2/sites-available/000-default.conf && \
-    echo '</Directory>' >> /etc/apache2/sites-available/000-default.conf
+# Install and build front-end assets (Laravel Breeze / Vite)
+RUN npm install && npm run build
 
-# Expose port
+# Laravel setup commands
+RUN php artisan key:generate && \
+    php artisan storage:link
+
+# Configure Apache to support Laravel's .htaccess
+RUN echo '<Directory /var/www/html>\n\
+    AllowOverride All\n\
+</Directory>' > /etc/apache2/sites-available/000-default.conf
+
+# Expose Apache port
 EXPOSE 80
 
 # Start Apache
