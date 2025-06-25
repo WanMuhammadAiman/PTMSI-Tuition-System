@@ -1,30 +1,35 @@
-# Use PHP 8.0 with Apache
-FROM php:8.0-apache
+FROM php:8.0.28-apache
 
-# Install required PHP extensions for Laravel
-RUN docker-php-ext-install pdo pdo_mysql
+# Install required PHP extensions
+RUN apt-get update && apt-get install -y \
+    zip unzip git curl libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql zip
 
-# Enable Apache mod_rewrite (needed for Laravel routing)
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy Laravel project into container
-COPY . /var/www/html
+# Copy Laravel project files
+COPY . .
 
-# Set proper permissions (optional but recommended)
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Fix .htaccess override (allow Laravel's pretty URLs)
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --no-interaction --optimize-autoloader
 
-# Change default Apache port to 4000
-RUN sed -i 's/80/4000/g' /etc/apache2/ports.conf /etc/apache2/sites-enabled/000-default.conf
+# Apache rewrite config for Laravel
+RUN echo '<Directory /var/www/html>' > /etc/apache2/sites-available/000-default.conf && \
+    echo '    AllowOverride All' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '</Directory>' >> /etc/apache2/sites-available/000-default.conf
 
-# Expose port 4000
-EXPOSE 4000
+# Expose port
+EXPOSE 80
 
-# Start Apache in foreground
+# Start Apache
 CMD ["apache2-foreground"]
