@@ -1,31 +1,43 @@
-# Use PHP 8.0.28 with Apache
+# Stage 1: Build front-end assets
+FROM node:20 as node-builder
+
+WORKDIR /app
+COPY . .
+
+# Install dependencies and build assets
+RUN npm install && npm run build
+
+
+# Stage 2: Laravel app with Apache and PHP
 FROM php:8.0.28-apache
 
-# Install system dependencies & PHP extensions
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev nodejs npm \
-    && docker-php-ext-install pdo pdo_mysql zip
+    git curl zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo pdo_mysql zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache mod_rewrite
+# Enable mod_rewrite
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy all Laravel files into container
+# Copy project files
 COPY . .
 
-# Create required folders if not present
-RUN mkdir -p storage/logs bootstrap/cache
+# Copy built assets from node stage
+COPY --from=node-builder /app/public/build /var/www/html/public/build
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
+# Fix Laravel permissions
+RUN mkdir -p storage/logs bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 storage bootstrap/cache
 
-# Copy Composer
+# Copy Composer binary
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-interaction --optimize-autoloader
 
 # Laravel setup
@@ -33,17 +45,14 @@ RUN cp .env.example .env \
     && php artisan key:generate \
     && php artisan storage:link
 
-# Compile frontend assets (if using Breeze/Vite)
-RUN npm install && npm run build
-
-# Apache config for .htaccess override
+# Apache override
 RUN echo '<Directory /var/www/html>\n\
     AllowOverride All\n\
     Require all granted\n\
 </Directory>' > /etc/apache2/sites-available/000-default.conf
 
-# Expose port 80
+# Expose and run
 EXPOSE 80
-
-# Start Apache
 CMD ["apache2-foreground"]
+
+
