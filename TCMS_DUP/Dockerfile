@@ -1,43 +1,39 @@
 # Use PHP 8.0.28 with Apache
-FROM php:8.0.28-apache as app
+FROM php:8.0.28-apache
 
 # Install system dependencies & PHP extensions
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev \
-    nodejs npm gnupg2 ca-certificates \
-    && docker-php-ext-install pdo pdo_mysql zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    git curl zip unzip libzip-dev libpng-dev libonig-dev libxml2-dev nodejs npm \
+    && docker-php-ext-install pdo pdo_mysql zip
 
-# Enable Apache rewrite
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy project files into container
+# Copy all Laravel files into container
 COPY . .
 
-# Ensure Laravel storage and cache directories exist
+# Create required folders if not present
 RUN mkdir -p storage/logs bootstrap/cache
 
-# Set correct permissions
+# Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 storage bootstrap/cache
 
-# Copy Composer from official image
+# Copy Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install PHP dependencies
+# Install dependencies
 RUN composer install --no-interaction --optimize-autoloader
 
-# Setup .env (optional: safer to mount in production)
-RUN cp .env.example .env
-
-# Laravel app setup
-RUN php artisan key:generate \
+# Laravel setup
+RUN cp .env.example .env \
+    && php artisan key:generate \
     && php artisan storage:link
 
-# Install and compile front-end assets
+# Compile frontend assets (if using Breeze/Vite)
 RUN npm install && npm run build
 
 # Apache config for .htaccess override
@@ -46,7 +42,7 @@ RUN echo '<Directory /var/www/html>\n\
     Require all granted\n\
 </Directory>' > /etc/apache2/sites-available/000-default.conf
 
-# Expose Apache port
+# Expose port 80
 EXPOSE 80
 
 # Start Apache
