@@ -35,34 +35,34 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
-    })->middleware('role:admin')->name('admin.dashboard'); 
+    })->middleware('role:admin')->name('admin.dashboard');
 
     Route::get('/tutor/dashboard', function () {
         return view('tutor.dashboard');
     })->middleware('role:tutor')->name('tutor.dashboard');
 
 
-Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])
-    ->middleware('role:student')
-    ->name('student.dashboard');
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])
+        ->middleware('role:student')
+        ->name('student.dashboard');
 
-Route::get('/student/enrolment', [EnrolmentController::class, 'index'])
-    ->middleware('role:student')
-    ->name('enrolment.page');
+    Route::get('/student/enrolment', [EnrolmentController::class, 'index'])
+        ->middleware('role:student')
+        ->name('enrolment.page');
 
-/* Route::get('/student/enrolment/', [EnrolmentController::class, 'create'])
+    /* Route::get('/student/enrolment/', [EnrolmentController::class, 'create'])
     ->middleware('role:student')
     ->name('enrolment.page'); */
 
-Route::get('/student/dashboard', [StudentDashboardController::class, 'dashboard'])->name('student.dashboard');
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'dashboard'])->name('student.dashboard');
 
 
-Route::get('/student/timetable', [StudentDashboardController::class, 'timetable'])
-    ->middleware('role:student')
-    ->name('student.timetable');
+    Route::get('/student/timetable', [StudentDashboardController::class, 'timetable'])
+        ->middleware('role:student')
+        ->name('student.timetable');
 
 
-Route::post('/student/enrolment', [EnrolmentController::class, 'store'])->name('enrolment.store');
+    Route::post('/student/enrolment', [EnrolmentController::class, 'store'])->name('enrolment.store');
 
 
     Route::get('/test-view', function () {
@@ -70,7 +70,6 @@ Route::post('/student/enrolment', [EnrolmentController::class, 'store'])->name('
     });
 
     Route::patch('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.updatePhoto');
-
 });
 
 Route::get('/student/payment', [PaymentController::class, 'index'])
@@ -82,12 +81,12 @@ Route::post('/student/payment/process', [PaymentController::class, 'process'])
     ->name('student.payment.process');
 
 
-    Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-        Route::get('/students', [App\Http\Controllers\AdminController::class, 'listStudents'])->name('admin.index');
-        Route::get('/students/{id}', [App\Http\Controllers\AdminController::class, 'viewStudent'])->name('admin.view');
-    });
-    
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/students', [App\Http\Controllers\AdminController::class, 'listStudents'])->name('admin.index');
+    Route::get('/students/{id}', [App\Http\Controllers\AdminController::class, 'viewStudent'])->name('admin.view');
+});
 
 
 
-require __DIR__.'/auth.php';
+
+require __DIR__ . '/auth.php';
