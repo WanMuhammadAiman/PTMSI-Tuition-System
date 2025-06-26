@@ -37,7 +37,7 @@
             </nav>
         </div>
     </header>
-
+<!-- HERO SECTION -->
     <!-- HERO SECTION -->
     <!-- <section class="relative h-screen bg-cover bg-center bg-no-repeat"
         <div class="absolute inset-0 bg-black bg-opacity-60"></div>
